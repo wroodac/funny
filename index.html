@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ZIP File Emulator</title>
+  <title>ZIP File EXE Emulator</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://js-dos.com/jsdos.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -19,30 +20,30 @@
     #output {
       margin-top: 20px;
     }
+    #dosbox {
+      width: 800px;
+      height: 600px;
+    }
   </style>
 </head>
 <body>
-  <h1>ZIP File Emulator</h1>
-  <p>Upload a ZIP file, and we'll extract its contents in the browser!</p>
+  <h1>ZIP File EXE Emulator</h1>
+  <p>Upload a ZIP file containing an EXE, and we will emulate it in the browser!</p>
   <input type="file" id="fileInput" accept=".zip" />
   <div id="output"></div>
+  <div id="dosbox"></div>
 
   <script>
     document.getElementById('fileInput').addEventListener('change', async (event) => {
       const file = event.target.files[0];
       const output = document.getElementById('output');
+      const dosboxContainer = document.getElementById('dosbox');
 
       if (!file) {
         output.innerHTML = '<p>Please select a file.</p>';
         return;
       }
 
-      // DEBUGGING: Log file properties to the console
-      console.log('Uploaded file:', file);
-      console.log('File name:', file.name);
-      console.log('File type:', file.type);
-
-      // Fix: Check the file extension instead of relying on the type property
       if (!file.name.endsWith('.zip')) {
         output.innerHTML = '<p>Please upload a valid ZIP file.</p>';
         return;
@@ -52,16 +53,37 @@
         const zip = new JSZip();
         const zipContent = await zip.loadAsync(file);
 
-        const fileList = [];
+        const exeFiles = [];
         zip.forEach((relativePath, file) => {
           if (file.name.endsWith('.exe')) {
-            fileList.push(`<li>${file.name}</li>`);
+            exeFiles.push(file);
           }
         });
 
-        output.innerHTML = fileList.length
-          ? `<p>Extracted EXE files:</p><ul>${fileList.join('')}</ul>`
-          : '<p>No EXE files found in the ZIP.</p>';
+        if (exeFiles.length > 0) {
+          output.innerHTML = `<p>Extracted EXE files:</p><ul><li>${exeFiles.map(f => f.name).join('</li><li>')}</li></ul>`;
+          
+          // Create a virtual DOSBox environment
+          const emulator = new jsDOS({
+            container: dosboxContainer,
+            files: {}
+          });
+
+          // Extract and add EXE to the DOSBox virtual file system
+          for (const exeFile of exeFiles) {
+            const exeBlob = await exeFile.async('blob');
+            const exeBuffer = await exeBlob.arrayBuffer();
+            emulator.files[exeFile.name] = new Uint8Array(exeBuffer);
+          }
+
+          emulator.ready().then(() => {
+            emulator.run();
+            emulator.sendKey('ENTER');
+            emulator.sendKey('dir');
+          });
+        } else {
+          output.innerHTML = '<p>No EXE files found in the ZIP.</p>';
+        }
       } catch (error) {
         console.error(error);
         output.innerHTML = '<p>Error processing the ZIP file.</p>';
