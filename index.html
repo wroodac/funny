@@ -37,7 +37,13 @@
         return;
       }
 
-      if (file.type !== 'application/zip') {
+      // DEBUGGING: Log file properties to the console
+      console.log('Uploaded file:', file);
+      console.log('File name:', file.name);
+      console.log('File type:', file.type);
+
+      // Fix: Check the file extension instead of relying on the type property
+      if (!file.name.endsWith('.zip')) {
         output.innerHTML = '<p>Please upload a valid ZIP file.</p>';
         return;
       }
