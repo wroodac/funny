@@ -64,8 +64,11 @@
 
         if (exeFiles.length > 0) {
           output.innerHTML = `<p>Extracted EXE files:</p><ul><li>${exeFiles.map(f => f.name).join('</li><li>')}</li></ul>`;
-          
-          // Initialize WebWine emulator
+
+          // Log the EXE file names to ensure they're being extracted
+          console.log("Extracted EXE Files:", exeFiles);
+
+          // Initialize WebWine emulator (We will not attempt to run it right away)
           const webwine = new WebWine({
             container: wineContainer,
             files: {}
@@ -78,16 +81,21 @@
             webwine.files[exeFile.name] = new Uint8Array(exeBuffer);
           }
 
-          // Run the EXE inside WebWine emulator
+          // Check if WebWine is ready
           webwine.ready().then(() => {
-            webwine.run(exeFiles[0].name); // Run the first EXE file
+            output.innerHTML += "<p>WebWine is ready to run the EXE.</p>";
+            // Run the EXE (testing if the EXE runs after loading)
+            webwine.run(exeFiles[0].name);
+          }).catch(err => {
+            output.innerHTML += `<p>Error initializing WebWine: ${err}</p>`;
+            console.error("Error initializing WebWine:", err);
           });
         } else {
           output.innerHTML = '<p>No EXE files found in the ZIP.</p>';
         }
       } catch (error) {
-        console.error(error);
-        output.innerHTML = '<p>Error processing the ZIP file.</p>';
+        output.innerHTML = `<p>Error processing the ZIP file: ${error.message}</p>`;
+        console.error("Error processing the ZIP:", error);
       }
     });
   </script>
