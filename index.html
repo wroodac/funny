@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ZIP File EXE Emulator</title>
+  <title>EXE Emulator with Wine in WebAssembly</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://js-dos.com/jsdos.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/chenxiaolong/webwine@master/dist/webwine.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -20,24 +20,26 @@
     #output {
       margin-top: 20px;
     }
-    #dosbox {
+    #wine-container {
       width: 800px;
       height: 600px;
+      border: 1px solid #ccc;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <h1>ZIP File EXE Emulator</h1>
-  <p>Upload a ZIP file containing an EXE, and we will emulate it in the browser!</p>
+  <h1>EXE Emulator with Wine (WebAssembly)</h1>
+  <p>Upload a ZIP file containing a Windows EXE, and we will try to emulate it in the browser!</p>
   <input type="file" id="fileInput" accept=".zip" />
   <div id="output"></div>
-  <div id="dosbox"></div>
+  <div id="wine-container"></div>
 
   <script>
     document.getElementById('fileInput').addEventListener('change', async (event) => {
       const file = event.target.files[0];
       const output = document.getElementById('output');
-      const dosboxContainer = document.getElementById('dosbox');
+      const wineContainer = document.getElementById('wine-container');
 
       if (!file) {
         output.innerHTML = '<p>Please select a file.</p>';
@@ -63,23 +65,22 @@
         if (exeFiles.length > 0) {
           output.innerHTML = `<p>Extracted EXE files:</p><ul><li>${exeFiles.map(f => f.name).join('</li><li>')}</li></ul>`;
           
-          // Create a virtual DOSBox environment
-          const emulator = new jsDOS({
-            container: dosboxContainer,
+          // Initialize WebWine emulator
+          const webwine = new WebWine({
+            container: wineContainer,
             files: {}
           });
 
-          // Extract and add EXE to the DOSBox virtual file system
+          // Extract EXE files and load them into WebWine's virtual filesystem
           for (const exeFile of exeFiles) {
             const exeBlob = await exeFile.async('blob');
             const exeBuffer = await exeBlob.arrayBuffer();
-            emulator.files[exeFile.name] = new Uint8Array(exeBuffer);
+            webwine.files[exeFile.name] = new Uint8Array(exeBuffer);
           }
 
-          emulator.ready().then(() => {
-            emulator.run();
-            emulator.sendKey('ENTER');
-            emulator.sendKey('dir');
+          // Run the EXE inside WebWine emulator
+          webwine.ready().then(() => {
+            webwine.run(exeFiles[0].name); // Run the first EXE file
           });
         } else {
           output.innerHTML = '<p>No EXE files found in the ZIP.</p>';
