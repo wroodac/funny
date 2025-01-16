@@ -1,6 +1,3 @@
-// Install necessary dependencies before using this script:
-// npm install express multer adm-zip
-
 const express = require('express');
 const multer = require('multer');
 const AdmZip = require('adm-zip');
@@ -11,20 +8,8 @@ const app = express();
 const upload = multer({ dest: 'uploads/' });
 const PORT = 3000;
 
-// Serve a basic HTML file for uploads
-app.get('/', (req, res) => {
-  res.send(`
-    <html>
-      <body>
-        <h1>Upload a ZIP file</h1>
-        <form action="/upload" method="post" enctype="multipart/form-data">
-          <input type="file" name="file" accept=".zip" required />
-          <button type="submit">Upload</button>
-        </form>
-      </body>
-    </html>
-  `);
-});
+// Serve the index.html file
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Handle file upload and extraction
 app.post('/upload', upload.single('file'), (req, res) => {
